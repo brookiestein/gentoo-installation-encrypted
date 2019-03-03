@@ -456,7 +456,7 @@ Bien, una vez hecho todos éstos pasos es hora de poner a compilar nuestro kerne
 # make
 # make modules_install
 # make install
-# genkernel --makeopts=-j4 --lvm --luks --install initramfs
+# genkernel --lvm --luks --install initramfs
 ```
 
 *__make__* es para compilar el kernel/núcleo.
