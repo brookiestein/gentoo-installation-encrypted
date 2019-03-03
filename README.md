@@ -532,10 +532,10 @@ Bien, ya con eso tendríamos nuestro kernel/núcleo listo, ahora toca editar el 
 #UUID=58e72203-57d1-4497-81ad-97655bd56494		/		ext4	noatime		0 1
 #LABEL=swap		none		swap		sw		0 0
 
-/dev/sda1		              /boot		ext2		noatime,nodiratime	0 0
-/dev/mapper/gentoo-swap		none		swap		defaults		        0 0
-/dev/mapper/gentoo-root		/		    ext4		noatime,nodiratime	0 1
-/dev/mapper/gentoo-home		/home		ext4		noatime,nodiratime	0 2
+/dev/sda1		            /boot		ext2		noatime,nodiratime	0 0
+/dev/mapper/gentoo-swap	none		swap		defaults		        0 0
+/dev/mapper/gentoo-root	/		    ext4		noatime,nodiratime	0 1
+/dev/mapper/gentoo-home	/home		ext4		noatime,nodiratime	0 2
 
 tmpfs /tmp tmpfs defaults,noatime,mode=1777 0 0
 ```
@@ -692,7 +692,7 @@ Cerramos sesión de la cuenta de root y nos logeamos con el usuario que acabamos
 Y el último paso de ésta guía es instalar el xorg para poder instalar el DE o WM que deseemos.
 
 ```
-# sudo emerge -a xorg-x11 xinit twm xconsole xclock xterm
+# sudo emerge -a xorg-server
 ```
 
 Ahora instalas los programas que desees/necesites, ejemplo: VLC, Firefox, etc. Podrás encontrar más información en la [Wiki de Gentoo](https://wiki.gentoo.org/wiki/Main_Page) y buscando en la WWW. Ésto sólo fue una pequeña introducción, tienes todo un universo que descubrir con Gentoo. Así que con ésto me despido. Disfuta tu Gentoo!
