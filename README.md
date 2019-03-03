@@ -61,8 +61,14 @@ Es momento de configurar LVM. Aquí depende del tamaño de tu disco y qué espac
 # mkfs.ext4 /dev/mapper/gentoo-home
 # mkswap /dev/mapper/gentoo-swap
 # swapon /dev/mapper/gentoo-swap
+# mount /dev/mapper/gentoo-root /mnt/gentoo
+# cd /mnt/gentoo
+# mkdir boot home hostrun
+# mount /dev/sda1 boot
+# mount /dev/mapper/gentoo-home home
 ```
-Antes de proceder al montado de las correspondientes particiones creo que tengo que explicar qué es lo que hemos hecho hasta el momento. Primero creamos un volumen físico (**pvcreate**), luego creamos un grupo de volúmenes (**vgcreate**), seguido creamos 3 volúmenes lógicos (**lvcreate**), luego los activamos (**vgchange**) y por último le aplicamos un FS a cada uno de ellos.
+Antes de proceder al montado de las correspondientes particiones creo que tengo que explicar qué es lo que hemos hecho hasta el momento. Primero creamos un volumen físico (**pvcreate**), luego creamos un grupo de volúmenes (**vgcreate**), seguido creamos 3 volúmenes lógicos (**lvcreate**), luego los activamos (**vgchange**), le aplicamos un FS a cada uno de ellos y los montamos.
+**Nota: La carpeta "hostrun" no se utilizó ahora mismo, pero servirá para montar /run en ella y así tener los metadatos de lvm.**
 
 Descargar el stage (En el [Handbook](https://wiki.gentoo.org/wiki/Handbook:AMD64/Full/Installation/es) recomiendan el stage 3, así que ese será el que descargaremos), en la misma página de dónde descargamos la iso de Gentoo está el stage 3. [__Aquí__](https://www.gentoo.org/downloads/)
 
@@ -134,7 +140,7 @@ EN __VIDEO_CARDS__ debes ponerle la tarjeta de vídeo que tienes, yo tengo una t
 ```
 # lspci | grep VGA
 ```
-Para obtener información sobre tu tarjeta gráfica. Y por último en __GRUB_PLATFORMS__ es para que el grub, que instalaremos más tarde sepa con qué configuración instalase, con decirle *__GRUB_PLATFORMS="pc"__* le estás diciendo que se instale con las configuraciones por defecto, ahora bien, si tienes EFI deberás realizar algunos pasos extra. Puedes informarte en el [Handbook](https://wiki.gentoo.org/wiki/Handbook:AMD64/Full/Installation/es#Seleccionar_un_gestor_de_arranque).
+Para obtener información sobre tu tarjeta gráfica. Y por último en __GRUB_PLATFORMS__ es para que el grub, que instalaremos más tarde sepa con qué configuración instalase, con decirle *__GRUB_PLATFORMS="pc"__* le estás diciendo que se instale con las configuraciones por defecto, ahora bien, si tienes EFI deberás realizar algunos pasos extra. Puedes informarte en el [Handbook](https://wiki.gentoo.org/wiki/Handbook:AMD64/Full/Installation/es#Seleccionar_un_gestor_de_arranque). Y por último, __USE__ aquí es dónde van todos los valores del soporte que queremos agregar a nuestros programas. En este caso se agregó soporte para: __*cryptsetup crypt mount truetype device-mapper*__
 
 Copiar la información DNS:
 
@@ -144,11 +150,6 @@ Copiar la información DNS:
 
 Montar los sistemas de ficheros necesarios para proceder
 ```
-# mount /dev/mapper/gentoo-root /mnt/gentoo
-# cd /mnt/gentoo
-# mkdir boot home hostrun
-# mount /dev/sda1 boot
-# mount /dev/mapper/gentoo-home home
 # mount --bind /run /mnt/gentoo/hostrun
 # mount -t proc /proc /mnt/gentoo/proc
 # mount --rbind /sys /mnt/gentoo/sys
