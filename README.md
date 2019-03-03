@@ -30,7 +30,6 @@ Bien, es momento de cifrar nuestra partición y aplicarle LVM.
 
 ```
 # mkfs.ext2 /dev/sda1
-# rc-service lvm start
 # cryptsetup -y -c aes-xts-plain64 -s 512 -h sha512 --use-random luksFormat /dev/sda2
 ```
 Es momento de explicar qué hace cada parámetro que le pasamos a **cryptsetup**
@@ -44,12 +43,13 @@ luksFormat es para aplicar el algoritmo LUKS
 
 Ahora debemos descifrar la partición
 ```
-# cryptsetup luksDump /dev/sda3
-# crypsetup luksOpen /dev/sda3 gentoo
+# cryptsetup luksDump /dev/sda2
+# crypsetup luksOpen /dev/sda2 gentoo
 ```
 
 Es momento de configurar LVM. Aquí depende del tamaño de tu disco y qué espacio quieres aplicarle a cada volumen. Yo creo 3 volúmenes: swap, / y /home. Tengo un SSD de 120 GiB así que queda algo así
 ```
+# rc-service lvm start
 # pvcreate /dev/mapper/gentoo
 # vgcreate gentoo /dev/mapper/gentoo
 # lvcreate -C y -L 5G -n swap gentoo
