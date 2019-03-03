@@ -33,6 +33,7 @@ Bien, es momento de cifrar nuestra partición y aplicarle LVM.
 # cryptsetup -y -c aes-xts-plain64 -s 512 -h sha512 --use-random luksFormat /dev/sda2
 ```
 Es momento de explicar qué hace cada parámetro que le pasamos a **cryptsetup**
+```
 **-y o --verify-passphrase le indica que pida la contraseña dos veces y se queje si ambas no coinciden
 -c es para indicar el algoritmo de cifrado
 -s es para indicar el tamaño de la clave
@@ -40,7 +41,7 @@ Es momento de explicar qué hace cada parámetro que le pasamos a **cryptsetup**
 --use-random es para indicarle al kernel que genere números aleatorios utilizando la clave maestra
 luksFormat es para aplicar el algoritmo LUKS
 /dev/sda2 es el dispositivo sobre el cual se aplicará el cifrado.**
-
+```
 Ahora debemos descifrar la partición
 ```
 # cryptsetup luksDump /dev/sda2
