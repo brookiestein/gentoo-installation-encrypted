@@ -11,6 +11,20 @@ Lo primero que hago/haremos es bootear un USB con la iso de Gentoo. La cuál pue
 
 Bien, ya teniendo nuestra USB booteada con Gentoo, procederemos a entrar desde ella en nuestra PC, éste paso como podrás adivinar es diferente para casi todos, pues depende de la PC y no todos tenemos la misma PC jeje, pero no es difícil, es más si quieres instalar Gentoo eso no debe ser un problema.
 
+Bien, como haremos una instalación cifrada, algo muy recomendable es sobreescribir el disco con datos aleatorios o de ceros para hacer más difícil la recuperación de archivos que pudieran haber con anterioridad. Si tienes un SSD ten cuidado, pues como seguro sabrás estos se degradan a cada escritura. Siguiendo con las advertencias he de decir que este proceso durará mucho, dependiendo de qué tan grande sea tu disco durará más o menos.
+
+Primero verificamos los discos que tenemos en nuestro PC
+```
+# fdisk -l
+```
+
+Dependiendo del disco en el que harás la instalación, sustituyes __/dev/sda__.
+```
+# dd if=/dev/zero of=/dev/sda bs=4M status=progress
+```
+
+Bueno, cierra los ojos por un momento o sal afuera a tomar un poco de aire y vuelvo en unos minutos, pues como te dije este proceso dura mucho.
+
 Llegados a éste punto toca particionar nuestro disco duro o SSD. Para éste fin yo utilizo la herramienta __"cfdisk"__ que ya viene en el livecd de Gentoo: Haremos 2 particiones, una para /boot (que no irá cifrada) y otra que sí lo irá.
 
 ```
