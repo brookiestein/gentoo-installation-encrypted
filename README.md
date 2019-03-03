@@ -418,6 +418,19 @@ __Habilitar soporte para Bluetooth__
             (32) Max number of sound cards
 ```
 
+__Habilitar soporte para LVM__
+```
+Device Drivers --->
+ Multiple devices driver support (RAID and LVM) --->
+  <*> Device mapper support
+    <*> Crypt target support
+    <*> Snapshot target
+    <*> Mirror target
+  <*> Multipath target
+    <*> I/O Path Selector based on the number of in-flight I/Os
+    <*> I/O Path Selector based on the service time 
+```
+
 Y por último...
 
 __Habilitar el soporte para contar con opciones criptográficas:__
