@@ -156,6 +156,17 @@ EN __VIDEO_CARDS__ debes ponerle la tarjeta de vídeo que tienes, yo tengo una t
 ```
 Para obtener información sobre tu tarjeta gráfica. Y por último en __GRUB_PLATFORMS__ es para que el grub, que instalaremos más tarde sepa con qué configuración instalase, con decirle *__GRUB_PLATFORMS="pc"__* le estás diciendo que se instale con las configuraciones por defecto, ahora bien, si tienes EFI deberás realizar algunos pasos extra. Puedes informarte en el [Handbook](https://wiki.gentoo.org/wiki/Handbook:AMD64/Full/Installation/es#Seleccionar_un_gestor_de_arranque). Y por último, __USE__ aquí es dónde van todos los valores del soporte que queremos agregar a nuestros programas. En este caso se agregó soporte para: __*cryptsetup crypt mount truetype device-mapper*__
 
+Seleccionar algún servidor de réplica
+```
+# mirrorselect -i -o >> /mnt/gentoo/etc/portage/make.conf
+```
+
+Configurar el repositorio ebuilds de Gentoo
+```
+# mkdir /mnt/gentoo/etc/portage/repos.conf
+# cp /mnt/gentoo/usr/share/portage/config/repos.conf /mnt/gentoo/etc/portage/repos.conf/gentoo.conf
+```
+
 Copiar la información DNS:
 
 ```
