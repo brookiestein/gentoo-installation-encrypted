@@ -23,7 +23,7 @@ Dependiendo del disco en el que harás la instalación, sustituyes __/dev/sda__.
 # dd if=/dev/zero of=/dev/sda bs=4M status=progress
 ```
 
-Bueno, cierra los ojos por un momento o sal afuera a tomar un poco de aire y vuelvo en unos minutos, pues como te dije este proceso dura mucho.
+Bueno, cierra los ojos por un momento o sal afuera a tomar un poco de aire y vuelve en unos minutos, pues como te dije este proceso dura mucho.
 
 Llegados a éste punto toca particionar nuestro disco duro o SSD. Para éste fin yo utilizo la herramienta __"cfdisk"__ que ya viene en el livecd de Gentoo: Haremos 2 particiones, una para /boot (que no irá cifrada) y otra que sí lo irá.
 
@@ -33,56 +33,73 @@ Llegados a éste punto toca particionar nuestro disco duro o SSD. Para éste fin
 
 Particionar con cfdisk es realmente sencillo, seleccionas el espacio vacío o en el caso de que el disco ya tenga formato, pues eliminarlo con la opción __"Remove"__, *__te moverás con las flechas arriba, izquierda, abajo y derecha y seleccionas con enter__*.
 
-Es el turno de darle un FS (FileSystem) o Sistema de Ficheros a nuestras particiones, hay muchos FS's pero yo utilizo ext*, si creaste las mismas particiones que yo (y en el orden que yo), de seguro que quedaría algo como: 
-
+Yo tengo un SSD de 120 GiB y creo estas particiones:
 ```
-/dev/sda1 para boot
-/dev/sda2 para LVM y LUKS
+/dev/sda1 para boot : 256 MiB
+/dev/sda2 con LVM y LUKS : Todo el espacio restante.
 ```
 
-Bien, es momento de cifrar nuestra partición y aplicarle LVM.
+Formateamos la partición dónde irá /boot con ext2 y ciframos la otra:
 
 ```
 # mkfs.ext2 /dev/sda1
-# cryptsetup -y -c aes-xts-plain64 -s 512 -h sha512 --use-random luksFormat /dev/sda2
+# cryptsetup -y -c aes-xts-plain64 -s 512 -h sha512 -i 5000 --use-random luksFormat /dev/sda2
 ```
+
 Es momento de explicar qué hace cada parámetro que le pasamos a **cryptsetup**
 ```
-**-y o --verify-passphrase le indica que pida la contraseña dos veces y se queje si ambas no coinciden
+**-y le indica que pida la contraseña dos veces y se queje si ambas no coinciden
 -c es para indicar el algoritmo de cifrado
 -s es para indicar el tamaño de la clave
 -h es para indicar el hash
+-i es para indicar el tiempo que tardará en descifrar la partición
 --use-random es para indicarle al kernel que genere números aleatorios utilizando la clave maestra
 luksFormat es para aplicar el algoritmo LUKS
 /dev/sda2 es el dispositivo sobre el cual se aplicará el cifrado.**
 ```
-Ahora debemos descifrar la partición
+Ahora debemos descifrar la partición para poder seguir con la instalación:
+
 ```
 # cryptsetup luksDump /dev/sda2
-# crypsetup luksOpen /dev/sda2 gentoo
+# cryptsetup luksOpen /dev/sda2 gentoo
 ```
 
-Es momento de configurar LVM. Aquí depende del tamaño de tu disco y qué espacio quieres aplicarle a cada volumen. Yo creo 3 volúmenes: swap, / y /home. Tengo un SSD de 120 GiB así que queda algo así
+Es momento de configurar LVM. Aquí depende del tamaño de tu disco y qué espacio quieres aplicarle a cada volumen. Yo creo 3 volúmenes: swap, / y /home. Tengo un SSD de 120 GiB así que queda algo así: 5GiB para swap, 25GiB para root y todo el espacio restante para home
 ```
 # rc-service lvm start
+
 # pvcreate /dev/mapper/gentoo
+
 # vgcreate gentoo /dev/mapper/gentoo
+
 # lvcreate -C y -L 5G -n swap gentoo
+
 # lvcreate -L 25G -n root gentoo
+
 # lvcreate -l 100%FREE -n home gentoo
+
 # vgchange -ay
+
 # mkfs.ext4 /dev/mapper/gentoo-root
+
 # mkfs.ext4 /dev/mapper/gentoo-home
+
 # mkswap /dev/mapper/gentoo-swap
+
 # swapon /dev/mapper/gentoo-swap
+
 # mount /dev/mapper/gentoo-root /mnt/gentoo
+
 # cd /mnt/gentoo
+
 # mkdir boot home hostrun
+
 # mount /dev/sda1 boot
+
 # mount /dev/mapper/gentoo-home home
 ```
 Antes de proceder al montado de las correspondientes particiones creo que tengo que explicar qué es lo que hemos hecho hasta el momento. Primero creamos un volumen físico (**pvcreate**), luego creamos un grupo de volúmenes (**vgcreate**), seguido creamos 3 volúmenes lógicos (**lvcreate**), luego los activamos (**vgchange**), le aplicamos un FS a cada uno de ellos y los montamos.
-**Nota: La carpeta "hostrun" no se utilizó ahora mismo, pero servirá para montar /run en ella y así tener los metadatos de lvm.**
+**Nota: La carpeta "hostrun" no se utilizó en este momento, pero servirá para montar /run en ella y así tener los metadatos de lvm.**
 
 Descargar el stage (En el [Handbook](https://wiki.gentoo.org/wiki/Handbook:AMD64/Full/Installation/es) recomiendan el stage 3, así que ese será el que descargaremos), en la misma página de dónde descargamos la iso de Gentoo está el stage 3. [__Aquí__](https://www.gentoo.org/downloads/)
 
@@ -142,7 +159,7 @@ PKGDIR="/usr/portage/packages"
 # Please keep this setting intact when reporting bugs.
 LC_MESSAGES=C
 
-USE="cryptsetup crypt mount truetype device-mapper"
+USE="crypt cryptsetup device-mapper mount truetype"
 ```
 
 Bien, es momento de explicar qué fue todo lo que le agregué:
@@ -156,12 +173,12 @@ EN __VIDEO_CARDS__ debes ponerle la tarjeta de vídeo que tienes, yo tengo una t
 ```
 Para obtener información sobre tu tarjeta gráfica. Y por último en __GRUB_PLATFORMS__ es para que el grub, que instalaremos más tarde sepa con qué configuración instalase, con decirle *__GRUB_PLATFORMS="pc"__* le estás diciendo que se instale con las configuraciones por defecto, ahora bien, si tienes EFI deberás realizar algunos pasos extra. Puedes informarte en el [Handbook](https://wiki.gentoo.org/wiki/Handbook:AMD64/Full/Installation/es#Seleccionar_un_gestor_de_arranque). Y por último, __USE__ aquí es dónde van todos los valores del soporte que queremos agregar a nuestros programas. En este caso se agregó soporte para: __*cryptsetup crypt mount truetype device-mapper*__
 
-Seleccionar algún servidor de réplica
+Seleccionar un servidor de réplica:
 ```
 # mirrorselect -i -o >> /mnt/gentoo/etc/portage/make.conf
 ```
 
-Configurar el repositorio ebuilds de Gentoo
+Configurar el repositorio de ebuilds de Gentoo:
 ```
 # mkdir /mnt/gentoo/etc/portage/repos.conf
 # cp /mnt/gentoo/usr/share/portage/config/repos.conf /mnt/gentoo/etc/portage/repos.conf/gentoo.conf
@@ -176,14 +193,23 @@ Copiar la información DNS:
 Montar los sistemas de ficheros necesarios para proceder
 ```
 # mount --bind /run /mnt/gentoo/hostrun
+
 # mount -t proc /proc /mnt/gentoo/proc
+
 # mount --rbind /sys /mnt/gentoo/sys
+
 # mount --rbind /dev /mnt/gentoo/dev
+
 # mkdir /mnt/gentoo/usr/portage
+
 # chroot /mnt/gentoo /bin/bash
+
 # source /etc/profile
+
 # export PS1="(chroot) $PS1"
+
 # mkdir /run/lvm
+
 # mount --bind /hostrun /run/lvm
 ```
 
@@ -213,6 +239,7 @@ Una vez hallamos elegido el perfil toca actualizar para tener una base para nues
 ```
 # emerge --ask --update --deep --newuse @world
 ```
+
 Ahora vamos a configurar la zona horaria, para ver todas las zonas horarias disponibles en Gentoo, hacemos:
 
 ```
@@ -239,8 +266,11 @@ Guarda los cambios con *__CTRL + S__* y sal con *__CTRL + X__*. Ahora genera las
 
 ```
 # locale-gen
+
 # eselect locale list
+
 # eselect locale set <<número_de_la_localización>>
+
 # env-update && source /etc/profile && export PS1="(chroot) $PS1"
 ```
 
@@ -248,7 +278,7 @@ Bien, ha llegado quizás el momento más importante de toda la guía, la compila
 *__Dicho en forma de broma__* Hacerlo como los hombres y compilar el kernel/núcleo de forma manual o utilizar la herramienta *__Genkernel__* que hace todo el proceso de forma automatica jeje. Bien vamos de menor a mayor, así que primero explicaré cómo hacerlo con *__Genkernel__*. Primero instalaremos algunos paquetes importantes. Éstos te servirán independientemente de la opción de compilación del kernel/núcleo que hallas elegido.
 
 ```
-# emerge -a gentoo-sources genkernel-next sys-boot/grub:2 cryptsetup dhcpcd gentoolkit pciutils dosfstools ntfs3g
+# emerge -a gentoo-sources genkernel-next sys-boot/grub:2 dhcpcd gentoolkit pciutils dosfstools ntfs3g
 ```
 
 Aquí los paquetes importantes son: *__gentoo-sources, genkernel-next, sys-boot/grub:2, dhcpcd, gentoolkit y pciutils__* los otros dos son controladores para poder detectar dispositivos FAT32 (*__dosfstools__*) y dispositivos NTFS (*__ntfs3g__*). Cuándo termine de compilar esos paquetes, crea el enlace a las fuentes del kernel/núcleo:
@@ -256,19 +286,22 @@ Aquí los paquetes importantes son: *__gentoo-sources, genkernel-next, sys-boot/
 ```
 # ls -l /usr/src/linux
 ```
+
 Y para compilar:
 
 ```
 # genkernel --lvm --luks all
 ```
 
-Ahora prepara un café y descansa un poco, éste proceso durará más o menos dependiendo de la potencia de tu procesador, yo tengo un i5 2540M y me ha durado unos 40 minutos.
+**Ahora prepara un café y descansa un poco, éste proceso durará más o menos dependiendo de la potencia de tu procesador, yo tengo un i5 2540M y me ha durado unos 40 minutos.**
 
 Bien ahora toca explicar cómo hacerlo o más bien cómo yo compilo el kernel/núcleo de forma manual, pues ésto depende de qué quieras compilar. Primero crear el enlace, entrar al directorio de las fuentes y entrar al menú de configuración:
 
 ```
 # ls -l /usr/src/linux
+
 # cd /usr/src/linux
+
 # make menuconfig
 ```
 
@@ -492,8 +525,11 @@ Bien, una vez hecho todos éstos pasos es hora de poner a compilar nuestro kerne
 
 ```
 # make
+
 # make modules_install
+
 # make install
+
 # genkernel --lvm --luks --install initramfs
 ```
 
@@ -507,12 +543,22 @@ Bien, una vez hecho todos éstos pasos es hora de poner a compilar nuestro kerne
 
 Bien, ya con eso tendríamos nuestro kernel/núcleo listo, ahora toca editar el archivo fstab ubicado en *__/etc/fstab__* que sirve para montar las particiones automáticamente al encender nuestra PC. Si tienes conocimientos, puedes editarlo por tu cuenta, sin embargo, sino, puedes dejarlo como lo dejo yo y no tendrás ningún problema, *__(Estoy tomando en cuenta de que haz seguido al pie de la letra la guía o al menos el punto de las particiones)__*
 
+En el manual de Gentoo recomiendan utilizar UUID (Identificador único universal) para agregar las particiones al fstab. Tienes dos opciones: La primera es utilizar UUID y la otra es utilizar su punto de montaje. Utiliza el que te sea más cómodo. Si quieres utilizar UUID's verifícalos con:
+
+```
+# blkid
+```
+
+Y lo agregas al fstab. Puedes copiarlo moviéndote con el cursor, seleccionándolo y con click derecho, se copiará y se pegará en dónde esté el cursor de escritura que de seguro estará en el prompt, así que borras lo que se pegó y escribes el comando:
+
 ```
 # nano -lw /etc/fstab
- ```
- 
- Mi archivo fstab está así, puedes eliminar tranquilamente la última línea si no estás utilizando un SSD:
- 
+```
+
+Y así lo vas haciendo hasta que hallas agregado cada UUID de cada partición correspondiente.
+
+Como ya comenté, también tienes la opción de utilizar su punto de montaje. En mis instalaciones de Gentoo suelo utilizar UUID's pero para no hacer esta guía más larga utilizaré puntos de montaje, pero puedes utilizar el método que más te guste. **Como nota final he de decir que mi fstab está más o menos configurado para un SSD, aunque no hay ningún problema si tienes un HDD y lo utilizas igual que yo.**
+
  ```
     # /etc/fstab: static file system information.
 #
@@ -543,18 +589,20 @@ Bien, ya con eso tendríamos nuestro kernel/núcleo listo, ahora toca editar el 
 #UUID=58e72203-57d1-4497-81ad-97655bd56494		/		ext4	noatime		0 1
 #LABEL=swap		none		swap		sw		0 0
 
-/dev/sda1		            /boot		ext2		noatime,nodiratime	0 0
-/dev/mapper/gentoo-swap	none		swap		defaults		        0 0
-/dev/mapper/gentoo-root	/		    ext4		noatime,nodiratime	0 1
-/dev/mapper/gentoo-home	/home		ext4		noatime,nodiratime	0 2
+/dev/sda1               /boot   ext2    noatime,nodiratime  0 0
+/dev/mapper/gentoo-swap none    swap    sw                  0 0
+/dev/mapper/gentoo-root /       ext4    noatime,nodiratime  0 1
+/dev/mapper/gentoo-home /home   ext4    noatime,nodiratime  0 2
 
 tmpfs /tmp tmpfs defaults,noatime,mode=1777 0 0
 ```
+
 Ahora es el momento de ponerle nombre a nuestra PC jeje, éste nombre se lo agregaremos ahora pero puedes cambiarlo en cualquier momento si así lo deseas.
 
 ```
 # nano -lw /etc/conf.d/hostname
 ```
+
 Introduce el nombre que desees dentro de las comillas.
 
 Ahora sería bueno que ejecutaras
@@ -562,6 +610,7 @@ Ahora sería bueno que ejecutaras
 ```
 # ifconfig
 ```
+
 Para que sepas que nombre es asignado a tu tarjeta de ethernet y así poder configurarla para utilizar *__DHCP__*  y poder acceder a internet, al menos hasta que instales *__NetworkManager__* o cualquier otro gestor de red. En mi caso es asignado el nombre *__"eno1"__*, así que quedaría más o menos así:
 
 ```
@@ -571,13 +620,15 @@ Para que sepas que nombre es asignado a tu tarjeta de ethernet y así poder conf
 Dentro del archivo pones: 
 ```
 config_eno1="dhcp"
-Evidentemente *__eno1__* lo cambias por el nombre que se le asignó a tu tarjeta de ethernet.
+Evidentemente eno1 lo cambias por el nombre que se le asignó a tu tarjeta de ethernet.
 ```
+
 Bien, ya casi hemos terminado, pero no te desconcentres porque ahora vamos por otro de los puntos más importantes y es el de asignar una contraseña al usuario root.
 
 ```
 # passwd
 ```
+
 Ponle la que desees, en el proceso no verás nada, pero de seguro eso ya lo sabes jeje.
 
 Ahora estableceremos la distribución que tendrá nuestro teclado en la's tty's. Aquí tienes que tener cuidado, pues una mala configuración puede ocasionar resultados extraños cuándo estemos teclando.
@@ -585,6 +636,7 @@ Ahora estableceremos la distribución que tendrá nuestro teclado en la's tty's.
 ```
 # nano -lw /etc/conf.d/keymaps
 ```
+
 Yo utilizo como distribución: *__Inglés (Estados Unidos Internacional)__* y el que trae por defecto sólo es *__Inglés__* así que, en mi caso, quedaría más o menos de la siguiente forma:
 
 ```
@@ -625,7 +677,11 @@ Es el turno del grub, toca instalación y configuración.
 ```
 # nano -lw /etc/default/grub
 ```
-Ubicas la línea que tiene **GRUB_CMDLINE_LINUX** y pones lo siguiente:
+
+Ubicas la línea que tiene **GRUB_CMDLINE_LINUX** y pones lo siguiente antes de ella:
+
+**Nota: Aquí también puedes utilizar UUID en lugar de puntos de montajes, yo así es que lo hago, pero como comenté en el paso de edición del fstab, utilizaré puntos de montajes en esta guía para no hacerla muy larga. Pero si quieres utilizar UUID, sólo tendrás que utilizar _blkid_, copiar el de la partición cifrada, agregarlo en la variable: _crypt_root_ y luego copiar el UUID del volumen dónde está root y lo agregas a _real_root._**
+
 ```
 GRUB_PRELOAD_MODULES=lvm
 GRUB_ENABLE_CRYPTODISK=y
@@ -645,16 +701,20 @@ Y la configuración
 Si te muestra algunos errores, haz lo siguiente:
 ```
 # exit
+
 # mount --bind /run /mnt/gentoo/hostrun
+
 # chroot /mnt/gentoo /bin/bash
+
 # mount --bind /hostrun/lvm /run/lvm
 ```
+
 Y regeneras el archivo...
 ```
 # grub-mkconfig -o /boot/grub/grub.cfg
 ```
 
-Activar el servicio de lvm al inicio:
+Activar el servicio de lvm para que se ejecute al inicio:
 ```
 # rc-update add lvm boot
 ```
@@ -663,11 +723,16 @@ Salimos del chroot y desmontamos las particiones:
 
 ```
 # exit
+
 # cd ..
+
 # cd ..
+
 # umount -l /mnt/gentoo/dev{/pts,/shm,}
+
 # umount -R /mnt/gentoo
 ```
+
 Reiniciar...
 ```
 # reboot
@@ -688,7 +753,7 @@ Ahora instalamos *__sudo__* para poder utilizar permisos de administrador con nu
 # emerge -a sudo
 ```
 
-Editamos el fichero: *__/etc/sudoers__* y descomentamos la línea: # &wheel ALL=(ALL) ALL
+Editamos el fichero: *__/etc/sudoers__* y descomentamos la línea: # %wheel ALL=(ALL) ALL
 ```
 ## Uncomment to allow members of group wheel to execute any command
 %wheel ALL=(ALL) ALL
@@ -700,10 +765,10 @@ Cerramos sesión de la cuenta de root y nos logeamos con el usuario que acabamos
 # exit
 ```
 
-Y el último paso de ésta guía es instalar el xorg para poder instalar el DE o WM que deseemos.
+Y el último paso de ésta guía es instalar el xorg para poder instalar el DE o WM que deseemos y linux-firmware:
 
 ```
-# sudo emerge -a xorg-server
+# sudo emerge -a xorg-server linux-firmware
 ```
 
 Ahora instalas los programas que desees/necesites, ejemplo: VLC, Firefox, etc. Podrás encontrar más información en la [Wiki de Gentoo](https://wiki.gentoo.org/wiki/Main_Page) y buscando en la WWW. Ésto sólo fue una pequeña introducción, tienes todo un universo que descubrir con Gentoo. Así que con ésto me despido. Disfuta tu Gentoo!
