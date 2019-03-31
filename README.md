@@ -349,7 +349,7 @@ Bien, aquí hay que hacer una pequeña pausa ya que necesitas saber qué control
 # lspci | grep Ethernet
 # lspci | grep Network
 ```
-Mi PC utiliza el controlador: *__Intel Wireless WiFi Next Gen AGN - Wireless-N/Advanced-N/Ultimate-N (iwlwifi)__* para la conexión inalámbrica y el controlador *__Intel (82586/82593/82596) devices__* para la conexión cableada. Si no obtienes información suficiente con el comando anterior debería buscar información en [Google](https://www.google.com/)
+Mi PC utiliza el controlador: *__Intel Wireless WiFi Next Gen AGN - Wireless-N/Advanced-N/Ultimate-N (iwlwifi)__* para la conexión inalámbrica y el controlador *__Intel (82586/82593/82596) devices__* para la conexión cableada. Si no obtienes información suficiente con el comando anterior debería buscar información en [DuckDuckGo](https://www.duckduckgo.com/)
 
 La sección para los controladores de red está en:
 ```
