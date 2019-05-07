@@ -192,7 +192,7 @@ Copiar la información DNS:
 
 Montar los sistemas de ficheros necesarios para proceder
 ```
-# mount --bind /run /mnt/gentoo/hostrun
+# mount --bind /run/lvm/ /mnt/gentoo/hostrun/
 
 # mount -t proc /proc /mnt/gentoo/proc
 
@@ -208,9 +208,9 @@ Montar los sistemas de ficheros necesarios para proceder
 
 # export PS1="(chroot) $PS1"
 
-# mkdir /run/lvm
+# mkdir /run/lvm/
 
-# mount --bind /hostrun /run/lvm
+# mount --bind /hostrun/ /run/lvm/
 ```
 
 Ahora vamos a instalar una instantánea de repositorio de ebuilds desde la web y actualizar el repositorio
@@ -694,22 +694,6 @@ GRUB_CMDLINE_LINUX="crypt_root=/dev/sda2 real_root=/dev/mapper/gentoo-root rootf
 ```
 
 Y la configuración
-```
-# grub-mkconfig -o /boot/grub/grub.cfg
-```
-
-Si te muestra algunos errores, haz lo siguiente:
-```
-# exit
-
-# mount --bind /run /mnt/gentoo/hostrun
-
-# chroot /mnt/gentoo /bin/bash
-
-# mount --bind /hostrun/lvm /run/lvm
-```
-
-Y regeneras el archivo...
 ```
 # grub-mkconfig -o /boot/grub/grub.cfg
 ```
