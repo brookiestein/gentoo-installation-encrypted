@@ -1041,7 +1041,7 @@ Y la configuración
 # rc-update add lvm boot
 ```
 
-**28. Salir de "la jaula chroot" y desmontar las particiones:
+**28. Salir de "la jaula chroot" y desmontar las particiones:**
 ```
 # exit
 
@@ -1112,7 +1112,7 @@ Te comparto estas dos frases que podrían ayudarte xD
 
 **No necesitas suerte, sólo determinación y esfuerzo.**
 
-**Enlaces que te podrían interesar:**
+**34. Enlaces que te podrían interesar:**
 
 [Artículo en Wikipedia sobre SHA-512](https://es.wikipedia.org/wiki/SHA512)
 
