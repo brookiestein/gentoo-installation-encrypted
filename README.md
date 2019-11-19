@@ -1,4 +1,4 @@
-__Guía de instalación de Gentoo (Personal)__
+**Guía de instalación de Gentoo (Personal)**
 
 Esta es una guía de instalación de Gentoo personal, es decir, todo lo que ella tenga son cosas que yo aplico a mi sistema.
 Evidentemente esto no impide que tú, querido lector, le saques provecho.
@@ -12,6 +12,8 @@ Esta guía es una especie de fork de una que ya había hecho, con la peculiarida
 instalación con LUKS y LVM. ¿Por qué lo hice así? Pues porque no a todos les interesa hacer una instalación con LVM y LUKS.
 
 Bien una vez aclarado esto, podemos iniciar...
+
+**1. "Creación" de un pendrive autoarrancable con el archivo [ISO](https://es.wikipedia.org/wiki/Imagen_ISO) de Gentoo:**
 
 Lo primero que hago/haremos es hacer que nuestro pendrive sea "autoarrancable" con la iso de Gentoo.
 
@@ -38,23 +40,25 @@ Si tienes un SSD ten cuidado, pues como seguro sabrás estos se degradan a cada 
 Siguiendo con las advertencias he de decir que este proceso durará mucho, dependiendo de qué tan grande sea tu 
 disco durará más o menos.
 
-Primero verificamos los discos que tenemos en nuestro PC
+**2. "Rellenar" el dispositivo donde se instalará Gentoo con datos pseudoaleatorios o de ceros:**
+
+Primero verificamos los discos que tenemos en nuestro ordenador
 ```
 # fdisk -l
 ```
-
 Dependiendo del disco en el que harás la instalación, sustituyes **/dev/sda.**
 ```
 # dd if=/dev/zero of=/dev/sda bs=4M status=progress
 ```
-
 Bueno, cierra los ojos por un momento o sal afuera a tomar un poco de aire y vuelve en unos minutos, 
 pues como te dije este proceso durará mucho.
+
+**3. Particionado:**
 
 Llegados a éste punto toca particionar nuestro disco duro o SSD. Para este fin yo utilizo la 
 herramienta **"cfdisk"** que ya viene en el **livecd** de Gentoo:
 
-Haremos 2 particiones:
+**3.1 Haremos 2 particiones:**
 ```
 1. /boot (que no irá cifrada) (en esta partición irá el cargador de arranque. En mis instalaciones suelo 
 utilizar GRUB, pero si utilizas otro no hay problemas.)
@@ -73,6 +77,9 @@ Yo tengo un SSD de 120 GiB y creo estas particiones:
 /dev/sda1 para boot : 256 MiB
 /dev/sda2 con LVM y LUKS : Todo el espacio restante.
 ```
+
+**4. Formateo de particiones y (des)cifrado:**
+
 Formateamos la partición donde irá **/boot** con ext2 y ciframos la otra:
 ```
 # mkfs -t ext2 /dev/sda1
@@ -89,19 +96,21 @@ Es momento de explicar qué hace cada parámetro que le pasamos a **cryptsetup**
 luksFormat es para aplicar el algoritmo LUKS
 /dev/sda2 es el dispositivo sobre el cual se aplicará el cifrado.
 ```
+**4.1 Descifrado:**
+
 Ahora debemos descifrar la partición para poder seguir con la instalación:
 
 ```
 # cryptsetup luksDump /dev/sda2
 # cryptsetup luksOpen /dev/sda2 gentoo
 ```
-
 ```
 1. luksDump:"vuelca" las cabeceras de LUKS en el dispositivo (en este caso /dev/sda2)
 2. luksOpen: desciframos el dispositivo. Este parámetro requiere de dos parámetros adicionales:
 2.1: Dispositivo cifrado con LUKS
 2.2: Nombre identificativo del dispositivo. Puede ser cualquiera. En este caso he elegido "gentoo".
 ```
+**5. Configuración de LVM y formateo de volúmenes:**
 
 Es momento de configurar LVM. Aquí depende del tamaño de tu disco y qué espacio quieres aplicarle a cada volumen.
 
@@ -157,6 +166,7 @@ lo que hemos hecho hasta el momento.
 **Nota: La carpeta "hostrun" no se utilizó en este momento, pero servirá para montar /run/ en ella y 
 así tener los metadatos de lvm, que nos servirán al momento de instalar y configurar el cargador de arranque GRUB.**
 
+**6. Descarga e instalación del stage 3 ofrecido por el [equipo de Gentoo](https://gentoo.org/inside-gentoo/developers/):**
 Descargar el stage (En el [Handbook](https://wiki.gentoo.org/wiki/Handbook:AMD64/Full/Installation/es) recomiendan 
 el stage 3, así que ese será el que descargaremos).
 
@@ -170,7 +180,7 @@ Después de haber descargado el stage 3 debemos descomprimirlo:
 
 Para saber qué hace cada parámetro que se utilizó de **tar**, leer su correspondiente **manual.**
 
-Editar el archivo **make.conf.**
+**7. Editar el archivo make.conf:**
 
 El archivo **make.conf** ubicado en **/etc/portage/make.conf**, es el archivo de configuración de portage, 
 la herramienta que se utiliza para compilar los paquetes en Gentoo, asi que como adivinarás, es muy importante.
@@ -260,28 +270,29 @@ Puedes informarte en el [Handbook](https://wiki.gentoo.org/wiki/Handbook:AMD64/F
 Y, por último, **USE ("la navaja suiza de Gentoo"):** aquí es dónde van todos los valores de 
 soporte que queremos agregar a nuestros programas. En este caso agregué soporte para:
 
-**bash, bluetooth, crypt, cryptsetup, dbus, device-mapper, mount, symlink, truetype**
+**bash, bluetooth, crypt, cryptsetup, dbus, device-mapper, mount, symlink y truetype**
 
 **Si quieres saber sobre algunos ajustes USE que podrían interesarte, lee el archivo de los mismos en:**
 
 **/usr/portage/profiles/use.desc**
 
-Seleccionar un servidor de réplica:
+
+**8. Seleccionar un servidor de réplica:**
 ```
 # mirrorselect -i -o >> /mnt/gentoo/etc/portage/make.conf
 ```
 
-Configurar el repositorio de ebuilds de Gentoo:
+**9. Configurar el repositorio de ebuilds de Gentoo:**
 ```
 # mkdir /mnt/gentoo/etc/portage/repos.conf/
 # cp /mnt/gentoo/usr/share/portage/config/repos.conf /mnt/gentoo/etc/portage/repos.conf/gentoo.conf
 ```
 
-Copiar la información DNS:
+**10. Copiar la información DNS:**
 ```
 # cp -L /etc/resolv.conf /mnt/gentoo/etc/
 ```
-Montar los sistemas de ficheros necesarios para proceder
+**11. Montar los sistemas de ficheros necesarios para proceder:**
 ```
 # mount --bind /run/lvm/ /mnt/gentoo/hostrun/
 
@@ -292,7 +303,7 @@ Montar los sistemas de ficheros necesarios para proceder
 # mount --rbind /dev/ /mnt/gentoo/dev/
 ```
 
-Entrar en "una jaula chroot":
+**12. Entrar en "una jaula chroot":**
 ```
 
 # mkdir /mnt/gentoo/usr/portage/
@@ -300,26 +311,32 @@ Entrar en "una jaula chroot":
 # chroot /mnt/gentoo /bin/bash
 ```
 
-Cargar "las configuraciones de "profile" y cambiarle el valor a la variable "PS1".
+**13. Cargar las configuraciones del archivo "profile" y cambiarle el valor a la variable "PS1".**
 
-Esto último es opcional, pero recomiendo hacerlo para ver ese "bonito": "chroot" en el prompt jeje.
+Esto último es opcional, pero recomiendo hacerlo para ver ese **"bonito": "chroot"** en el prompt jeje.
 ```
 # source /etc/profile
 
 # export PS1="(chroot) $PS1"
 ```
-Montar **"/hostrun/"** en **"/run/lvm/"** para contar con el archivo de metadatos de **LVM** que necesitaremos
-al momento de instalar el cargador de arranque más adelante:
+**14. Montar "/hostrun/" en "/run/lvm/"**
+
+Esto lo hacemos para contar con el archivo de metadatos de LVM que necesitaremos al momento de instalar 
+el cargador de arranque más adelante:
 ```
 # mkdir /run/lvm/
 
 # mount --bind /hostrun/ /run/lvm/
 ```
+**15. Instalar una instantánea y actualizar el repositorio local:**
+
 Ahora vamos a instalar una instantánea de repositorio de ebuilds desde la web y actualizar el repositorio
 ```
 # emerge-webrsync -v
 # emerge --sync
 ```
+**16. Elección del perfil:**
+
 Bien, ha llegado la hora de elegir un perfil para nuestra instalación.
 Gentoo, de manera predeterminada viene con un perfil recomendado seleccionado, 
 ese es el que utilizo, pero tú puedes cambiarlo si quieres. Para listar todos los perfiles ejecuta:
@@ -333,6 +350,8 @@ Y para seleccionar el que desees:
 
 Como dije el que utilizo es el que recomienda Gentoo, que, al menos al momento de escribir ésta guía, es el número 16.
 
+**17. Actualizar el sistema para tener:**
+
 Una vez hayamos elegido el perfil toca actualizar para tener una base para nuestro sistema:
 ```
 # emerge --ask --update --deep --changed-use --verbose @world
@@ -342,6 +361,8 @@ o de manera abreviada:
 # emerge -auvDU @world
 ```
 Para más información, lee el manual de **emerge**
+
+**18. Configuración de localización:**
 
 Ahora vamos a configurar la zona horaria, para ver todas las zonas horarias disponibles en Gentoo, hacemos:
 ```
@@ -376,15 +397,20 @@ Por finalizar con este paso, "refrescamos" nuestro entorno con:
 # source /etc/profile
 # export PS1="(chroot) $PS1"
 ```
+**19. Compilación e instalación del núcleo, módulos e initramfs:**
+
 Bien, ha llegado quizás el momento más importante de toda la guía, la compilación del núcleo.
 
 Tienes dos opciones:
 ```
-1. *Dicho en forma de broma* Hacerlo como los hombres y compilar el kernel/núcleo
-de forma manual, o;
+1. *Dicho en forma de broma*: Hacerlo como los hombres y compilar el núcleo de forma manual, o;
 2. Utilizar la herramienta: "Genkernel" que hace todo el proceso de forma automatica jeje.
 ```
+**19.1. Compilación con Genkernel:**
+
 Bien vamos de menor a mayor, así que primero explicaré cómo hacerlo con **Genkernel**.
+
+**19.1.1. Instalar programas necesarios:**
 
 Primero instalaremos algunos paquetes importantes. 
 Estos te servirán independientemente de la opción de compilación del kernel/núcleo que hayas elegido.
@@ -402,9 +428,11 @@ initramfs, entre otras.
 3. grub: Es un cargador de arranque muy popular entre las distribuciones GNU/Linux. Existen otros también.
 4. dhcpcd: Es una utilidad para utilizar el protocolo DHCP en las conexiones de red.
 5. gentoolkit: Es una herramienta, desarrollada por el equipo de Gentoo con varias utilidades, entre ellas:
-eclean, que sirve para hacer "una limpieza" de los archivos de código fuente que no se necesiten en el sistema, entre otras.
+eclean, que sirve para hacer "una limpieza" de los archivos de código fuente que no se necesiten en el 
+sistema, entre otras.
 6. pciutils: Utilidades para la detección de hardware conectado en los puertos PCI de tu ordenador.
 ```
+**19.1.2. Verificación del enlace simbólico a las fuentes:**
 
 Cuándo termine de compilar esos paquetes, verifica que el enlace simbólico **"linux"** apunta a las fuentes del núcleo:
 
@@ -416,6 +444,7 @@ Si no es así, crealo:
 ```
 ln -s /usr/src/linux /usr/src/linux-$(uname -r)
 ```
+**19.1.3. Compilación e instalación: Módulos e initramfs con Genkernel:**
 
 Y para compilar:
 
@@ -427,10 +456,14 @@ Con estos parámetros se "le dice" a **"genkernel"** que configure y compile el 
 agregue soporte para **LUKS** y **LVM**.
 
 **Ahora prepara un café y descansa un poco, este proceso durará más o menos dependiendo de la potencia de tu
-procesador. Yo tengo un i5 2540M con dos (2) núcleos, cuatro (4) hilos y me ha durado unos 40 minutos.**
+procesador.**
+
+**Yo tengo un Intel Core i5 2540M con dos (2) núcleos, cuatro (4) hilos y me ha durado unos 40 minutos.**
 
 **Esto es así, debido a que con esta opción genkernel realiza todo el proceso, incluyendo la "creación" del initramfs.
 Es decir, no sólo compila el núcleo. Ya veremos que configurando nosotros mismos el núcleo se tarda menos tiempo.**
+
+**19.2. Compilación manual:**
 
 Bien ahora toca explicar cómo hacerlo o más bien cómo yo compilo el núcleo de forma manual, 
 pues esto depende de qué quieras compilar.
@@ -438,15 +471,20 @@ pues esto depende de qué quieras compilar.
 A continuación habrán opciones y/o módulos que son necesarios para que el sistema arranque y otros que los activo
 porque quiero tenerlos. Donde se aplican estos últimos, digo que no es necesario si no quieres tener dicho soporte.
 
+**19.2.1. Verificación del enlace simbólico a las fuentes:**
+
 Primero verifica que el enlace simbólico **"linux"** apunta a las fuentes correspondientes:
 ```
 ls -l /usr/src/linux
 ```
+**19.2.2. Creación del enlace simbólico a las fuentes:**
 
 Si no es así, crealo:
 ```
 ln -s /usr/src/linux /usr/src/linux-$(uname -r)
 ```
+
+**19.2.3. Entrar en el directorio de las fuentes y menú de configuración:**
 
 Entrar al directorio de las fuentes y entrar al menú de configuración:
 
@@ -455,11 +493,13 @@ Entrar al directorio de las fuentes y entrar al menú de configuración:
 
 # make menuconfig
 ```
+**19.2.4. Configuración: Módulos y soporte en el núcleo:**
 
 Una vez aquí dentro vamos a activar algunas opciones que son necesarias para que el núcleo pueda funcionar.
 
 Algunas características necesarias Gentoo las trae activadas para "hacernos la vida más fácil" jeje.
 
+**19.2.4.1. Soporte devtmpfst:**
 
 __Habilitar soporte devtmpfst__
 ```
@@ -469,12 +509,16 @@ Device Drivers --->
     [ ]   Automount devtmpfs at /dev, after the kernel mounted the rootfs
 ```
 
+**19.2.4.2. Soporte para discos SCSI:**
+
 __Habilitar el soporte de disco SCSI__
 ```
 Device Drivers --->
    SCSI device support  --->
       <*> SCSI disk support
 ```
+
+**19.2.4.3. Soporte de sistemas de archivos:**
 
 __Seleccionar los sistemas de archivos necesarios__
 ```
@@ -494,6 +538,8 @@ Pseudo Filesystems --->
     [*] /proc file system support
     [*] Tmpfs virtual memory file system support (former shm fs)
 ```
+
+**19.2.4.4. Soporte para conexión de red: Cableada e innalámbrica:**
 
 __Controladores para Ethernet y Wi-Fi__
 
@@ -516,11 +562,15 @@ Device Drivers --->
   Network device support --->
 ```
 
+**19.2.4.5. Soporte SMP:**
+
 __Activar el soporte SMP__
 ```
 Processor type and features  --->
   [*] Symmetric multi-processing support
 ```
+
+**19.2.4.6. Soporte para USB:**
 
 __Activar soporte para dispositivos de entrada USB__
 ```
@@ -536,11 +586,17 @@ Device Drivers --->
     <*>     EHCI HCD (USB 2.0) support
     <*>     OHCI HCD (USB 1.1) support
 ```
+
+**19.2.4.7. Soporte para características del procesador:**
+
 __Seleccionar los tipos y las características del procesador__
 ```
 Executable file formats / Emulations  --->
    [*] IA32 Emulation
 ```
+
+**19.2.4.8. Soporte para GPT:**
+
 __Habilitar el soporte para GPT__
 
 ```
@@ -549,6 +605,8 @@ __Habilitar el soporte para GPT__
       [*] Advanced partition selection
       [*] EFI GUID Partition support
 ```
+
+**19.2.4.9. Soporte para UEFI:**
 
 Este paso no es necesario si no tienes UEFI
 
@@ -564,6 +622,9 @@ Firmware Drivers  --->
     EFI (Extensible Firmware Interface) Support  --->
         <*> EFI Variable Support via sysfs
 ```
+
+**19.2.4.10. Soporte para ALSA:**
+
 __Habilitar el soporte para sonido (ALSA)__
 
 Puedes encontrar información sobre tu tarjeta de sonido con:
@@ -595,6 +656,8 @@ Device Drivers --->
             [*] Dynamic device file minor numbers
 ```
 
+**19.2.4.11. Soporte para Bluetooth:**
+
 Este paso no es necesario si no tienes **Bluetooth**
 
 __Habilitar soporte para Bluetooth__
@@ -621,6 +684,8 @@ __Habilitar soporte para Bluetooth__
             (32) Max number of sound cards
 ```
 
+**19.2.4.12. Soporte para LVM:**
+
 __Habilitar soporte para LVM__
 ```
 Device Drivers --->
@@ -634,7 +699,7 @@ Device Drivers --->
     <*> I/O Path Selector based on the service time 
 ```
 
-__Habilitar el soporte para contar con opciones criptográficas:__
+**19.2.4.13. Soporte para criptografía:**
 
 __Habilitando el mapeador de dispositivos y el destino crypt__
 ```
@@ -678,7 +743,9 @@ File systems --->
      <*> Twofish cipher algorithm
 ```
 
-Este paso no es necesario si no deseas utilizar [OpenVPN[(https://es.wikipedia.org/wiki/OpenVPN)
+**19.2.4.14. Soporte para OpenVPN:**
+
+Este paso no es necesario si no deseas utilizar [OpenVPN](https://es.wikipedia.org/wiki/OpenVPN)
 
 **Habilitar soporte para TUN/TAP:**
 ```
@@ -687,6 +754,8 @@ Device Drivers  --->
         [*] Network core driver support
         <*>   Universal TUN/TAP device driver support
 ```
+
+**19.2.4.15. Soporte para Samba:**
 
 Este paso no es necesario si no deseas utilizar el servicio [Samba](https://es.wikipedia.org/wiki/Samba_(software))
 
@@ -702,15 +771,21 @@ File Systems --->
             [*] SMB2 and SMB3 network file system support
 ```
 
-Bien, una vez hecho todos estos pasos es hora de compilar nuestro kernel/núcleo:
+**19.2.5. Compilación:**
+
+Bien, una vez hecho todos estos pasos es hora de compilar nuestro núcleo:
 
 Es bueno que sepas cuantos núcleos e hilos tiene tu procesador, para que aproveches esta
 y todas las compilaciones que realices en Gentoo.
+
+**19.2.5.1. Verificación de núcleos del procesador:**
 
 Para verificar esto, ejecuta el siguiente comando y busca donde dice **"cpu cores"**
 ```
 # cat /proc/cpuinfo
 ```
+
+**19.2.5.2. Compilar:**
 
 Ejecuta **make** con el parámetro **-j** y a este "pásale" el número de hilos que tenga tu procesador.
 
@@ -726,7 +801,7 @@ Ejecuta **make** con el parámetro **-j** y a este "pásale" el número de hilos
 # genkernel --lvm --luks --install initramfs
 ```
 
-**Explicación de los comandos/programas utilizados anteriormente:**
+**19.2.5.3. Explicación de los comandos/programas utilizados anteriormente:**
 ```
 1. make: Es para compilar el kernel/núcleo.
 
@@ -739,7 +814,9 @@ Ejecuta **make** con el parámetro **-j** y a este "pásale" el número de hilos
 
 Bien, ya con eso tendríamos nuestro núcleo listo.
 
-Ahora toca editar el archivo fstab ubicado en **/etc/fstab** que sirve para montar las 
+**20. Edición de fstab:**
+
+Este archivo está ubicado en **/etc/fstab** que sirve para montar las 
 particiones automáticamente al encender nuestro ordenador.
 
 Si tienes conocimientos, puedes editarlo por tu cuenta, sin embargo, sino, 
@@ -754,6 +831,8 @@ Tienes dos opciones:
 1. Utilizar UUID
 2. Utilizar su punto de montaje.
 ```
+**20.1. Verificación de UUID(s) de particiones y/o volúmenes:**
+
 Utiliza el que te sea más cómodo. Si quieres utilizar UUID(s) verifícalos con:
 ```
 # blkid
@@ -813,12 +892,18 @@ aunque no hay ningún problema si tienes un HDD y lo utilizas igual que yo.**
 
 tmpfs /tmp tmpfs defaults,noatime,mode=1777 0 0
 ```
-Ahora es el momento de ponerle nombre a nuestro ordenador jeje. Este nombre se lo agregaremos ahora 
-pero puedes cambiarlo en cualquier momento si así lo deseas.
+**21. Configurar nombre de host:**
+
+Establecer nombre a nuestro host/ordenador:
+
+Este nombre se lo agregaremos ahora pero puedes cambiarlo en cualquier momento si así lo deseas.
 ```
 # nano -lw /etc/conf.d/hostname
 ```
 Introduce el nombre que desees dentro de las comillas.
+
+**22. Configuración del 
+[protocolo DHCP](https://es.wikipedia.org/wiki/Protocolo_de_configuraci%C3%B3n_din%C3%A1mica_de_host):**
 
 Ahora sería bueno que ejecutaras:
 
@@ -827,9 +912,11 @@ Ahora sería bueno que ejecutaras:
 ```
 
 Para que sepas que nombre es asignado a tu tarjeta de ethernet y así poder configurarla para 
-utilizar **el protocolo DHCP**  y poder acceder a internet (de esta forma), al menos hasta que instales:
+utilizar el [protocolo DHCP](https://es.wikipedia.org/wiki/Protocolo_de_configuraci%C3%B3n_din%C3%A1mica_de_host)
+y poder acceder a internet (de esta forma), al menos hasta que instales:
 
-**NetworkManager** (que es el gestor de red que utilizo) o cualquier otro gestor de red.
+[NetworkManager](https://es.wikipedia.org/wiki/NetworkManager) (que es el gestor de red que utilizo) o 
+cualquier otro gestor de red.
 
 En mi caso es asignado el nombre **eno1**, así que quedaría más o menos así:
 
@@ -843,6 +930,8 @@ config_eno1="dhcp"
 ```
 Evidentemente **eno1** lo cambias por el nombre que se le asignó a tu tarjeta de ethernet.
 
+**23. Establecimiento de la contraseña del usuario root:**
+
 Bien, ya casi hemos terminado, pero no te desconcentres porque ahora vamos por otro de los 
 puntos más importantes y es el de asignar una contraseña al usuario root.
 
@@ -851,6 +940,8 @@ puntos más importantes y es el de asignar una contraseña al usuario root.
 ```
 
 Ponle la que desees, en el proceso no verás nada, pero de seguro eso ya lo sabes jeje.
+
+**24. Configurar la distribución del teclado en la(s) tty(s):**
 
 Ahora estableceremos la distribución que tendrá nuestro teclado en la(s) tty(s).
 
@@ -892,6 +983,8 @@ fix_euro="NO"
 
 Aquí el punto importante es arriba donde dice: **keymap="us"**
 
+**25. Configuración del reloj:**
+
 Ahora vamos a configurar el reloj del sistema. Por defecto viene en *__UTC__* 
 pero lo puedes cambiar por el que quieras, yo esto lo dejo así, por defecto.
 
@@ -901,7 +994,14 @@ Para cambiarlo, lo haces editando el siguiente archivo:
 # nano -lw /etc/conf.d/hwclock
 ```
 
-Es el turno del GRUB: Instalación y configuración.
+**26. Instalación y configuración de [GRUB](https://es.wikipedia.org/wiki/GNU_GRUB):**
+
+[El cargador de arranque GRUB](https://es.wikipedia.org/wiki/GNU_GRUB) tiene su archivo de configuración en la ruta:
+
+**/etc/default/grub,** aquí vamos a establecer una serie de valores necesarios para nuestros propósitos:
+
+**Configurarlo para que soporte LUKS y LVM.**
+
 ```
 # nano -lw /etc/default/grub
 ```
@@ -922,22 +1022,26 @@ GRUB_DEVICE=/dev/ram0
 GRUB_CMDLINE_LINUX="crypt_root=/dev/sda2 real_root=/dev/mapper/gentoo-root rootfstype=ext4 dolvm"
 ```
 
+**26.1. Instalación:**
+
 Instalamos GRUB con los siguientes módulos: **linux, crypto, search_fs_uuid, luks y lvm**
 ```
 # grub-install --modules="linux crypto search_fs_uuid luks lvm" --recheck /dev/sda
 ```
+
+**26.2. Generar el archivo de configuración:**
 
 Y la configuración
 ```
 # grub-mkconfig -o /boot/grub/grub.cfg
 ```
 
-Activar el servicio de lvm para que se ejecute al inicio:
+**27. Activar el servicio de lvm para que se ejecute al inicio:**
 ```
 # rc-update add lvm boot
 ```
 
-Salimos de "la jaula chroot" y desmontamos las particiones:
+**28. Salir de "la jaula chroot" y desmontar las particiones:
 ```
 # exit
 
@@ -948,13 +1052,15 @@ Salimos de "la jaula chroot" y desmontamos las particiones:
 # umount -R /mnt/gentoo
 ```
 
-Reiniciamos nuestro ordenador
+**29. Reiniciar:**
 ```
 # reboot
 ```
 
 ¡Felicitaciones, ya tienes Gentoo instalado! Ahora queda hacer alguna que otra modificación 
 para empezar a compilar e instalar los paquetes que necesitemos:
+
+**30. "Creación" de un usuario con privilegios limitados:**
 
 "Crear" un usuario a parte de root, puesto que como seguro sabrás no es recomendable 
 utilizar siempre el usuario root. Es mejor tener **un usuario con privilegios limitados,** 
@@ -965,6 +1071,7 @@ Iniciamos sesión con el usuario root y la contraseña que especificamos en la i
 # useradd -m -G users,wheel,audio,video,usb,portage,cdrom -s /bin/bash <<nombre_de_usuario>>
 # passwd <<nombre_de_usuario>>
 ```
+**31. Instalación de "sudo" para dotarlo de la posibilidad de ejecutar procesos con permisos de root:**
 
 Ahora instalamos **sudo** para poder utilizar permisos de root con nuestro usuario:
 
@@ -972,16 +1079,21 @@ Ahora instalamos **sudo** para poder utilizar permisos de root con nuestro usuar
 # emerge -a sudo
 ```
 
+**31.1. Editar el archivo "sudoers" para completar este paso:**
+
 Editamos el fichero: **/etc/sudoers** y descomentamos la línea: # %wheel ALL=(ALL) ALL
 ```
 ## Uncomment to allow members of group wheel to execute any command
 %wheel ALL=(ALL) ALL
 ```
+**32. Cerrar sesión:**
 
 Cerramos sesión de la cuenta de root e iniciamos sesión con el usuario que acabamos de crear:
 ```
 # exit
 ```
+**33. Instalar el servidor xorg:**
+
 Y el último paso de esta guía es instalar el xorg para poder instalar el DE o WM que deseemos:
 ```
 # sudo emerge -a xorg-server
@@ -1009,3 +1121,11 @@ Te comparto estas dos frases que podrían ayudarte xD
 [Artículo en Wikipedia sobre Samba](https://es.wikipedia.org/wiki/Samba_(software))
 
 [Artículo en Wikipedia sobre OpenVPN](https://es.wikipedia.org/wiki/OpenVPN)
+
+[Artículo en Wikipedia sobre el protocolo DHCP](https://es.wikipedia.org/wiki/Protocolo_de_configuraci%C3%B3n_din%C3%A1mica_de_host)
+
+[Artículo en Wikipedia sobre el gestor de red NetworkManager](https://es.wikipedia.org/wiki/NetworkManager)
+
+[Artículo en Wikipedia sobre imágenes ISO](https://es.wikipedia.org/wiki/Imagen_ISO)
+
+[Artículo en Wikipedia sobre GNU GRUB](https://es.wikipedia.org/wiki/GNU_GRUB)
