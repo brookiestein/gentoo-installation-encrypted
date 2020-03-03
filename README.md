@@ -1,23 +1,30 @@
 **Guía de instalación de Gentoo (Personal)**
 
-Esta es una guía de instalación de Gentoo personal, es decir, todo lo que ella tenga son cosas que yo aplico a mi sistema.
+Esta es una guía de instalación de Gentoo personal. Es decir, todo lo que ella tenga son cosas que yo aplico a mi sistema.
 Evidentemente esto no impide que tú, querido lector, le saques provecho.
 
-**La copia y la redistribución de este documento está permitida, más no la modificación, pues como ya he mencionado es 
-una guía que hago a modo de bloc de notas para mis instalaciones del sistema operativo Gentoo GNU/Linux.**
+**Pequeña información antes de empezar con la guía:**
 
-Si encuentras algún error, por favor, no dudes en hacermelo saber.
+**La copia y la redistribución de este documento está permitida, más no la modificación de él como tal.**
+
+**Ya que esto es una especie de bloc de notas para mis instalaciones de Gentoo.
+Es decir, para tener todo o casi todo en un mismo lugar.**
+
+**Esta guía no pretende sustituir el manual oficial de la distribución. (A la cual puedes acceder
+desde un enlace que puedes encontrar al final de este documento)**
+
+**Si encuentras algún error, por favor, no dudes en hacermelo saber.**
 
 Esta guía es una especie de fork de una que ya había hecho, con la peculiaridad de que en esta explico cómo hacer la 
 instalación con LUKS y LVM. ¿Por qué lo hice así? Pues porque no a todos les interesa hacer una instalación con LVM y LUKS.
 
-Bien una vez aclarado esto, podemos iniciar...
+Bien una vez aclarado esto, podemos iniciar.
 
 **1. "Creación" de un pendrive autoarrancable con el archivo [ISO](https://es.wikipedia.org/wiki/Imagen_ISO) de Gentoo:**
 
-Lo primero que hago/haremos es hacer que nuestro pendrive sea "autoarrancable" con la iso de Gentoo.
+Lo primero que hago/haremos es hacer que nuestro pendrive sea "autoarrancable" con el archivo iso de Gentoo.
 
-La cual puede ser encontrada en [su página oficial, sección de descargas](https://www.gentoo.org/downloads/).
+El cual puede ser encontrado en [su página oficial, sección de descargas](https://www.gentoo.org/downloads/).
 
 El proceso de "autoarranque" varía dependiendo del sistema operativo que tengas instalado así que te 
 dejaré a ti ese proceso, aunque sí que te daré algunas pistas:
@@ -37,8 +44,8 @@ ceros para hacer más difícil la recuperación de archivos que pudieran haber c
 
 Si tienes un SSD ten cuidado, pues como seguro sabrás estos se degradan a cada escritura.
 
-Siguiendo con las advertencias he de decir que este proceso durará mucho, dependiendo de qué tan grande sea tu 
-disco durará más o menos.
+Siguiendo con las advertencias he de decir que este proceso durará mucho. Dependiendo de qué tan grande sea tu 
+disco duro o SSD durará más o menos.
 
 **2. "Rellenar" el dispositivo donde se instalará Gentoo con datos pseudoaleatorios o de ceros:**
 
@@ -63,12 +70,12 @@ herramienta **"cfdisk"** que ya viene en el **livecd** de Gentoo:
 1. /boot (que no irá cifrada) (en esta partición irá el cargador de arranque. En mis instalaciones suelo 
 utilizar GRUB, pero si utilizas otro no hay problemas.)
 2. Otra que sí lo irá, donde "crearemos" un volumen físico, grupo de volúmenes y algunos volúmenes lógicos 
-para: /, swap y /home.
+con LVM para: /, swap y /home.
 ```
 ```
 # cfdisk
 ```
-Particionar con **cfdisk** es relativamente sencillo, seleccionas el espacio vacío o en el caso de que el disco 
+Particionar con **cfdisk** es relativamente sencillo, seleccionas el espacio vacío o, en el caso de que el disco 
 ya tenga formato, pues eliminarlo con la opción **"Remove"**, **te moverás con las flechas arriba, izquierda, 
 abajo y derecha y seleccionas con enter**.
 
@@ -80,21 +87,26 @@ Yo tengo un SSD de 120 GiB y creo estas particiones:
 
 **4. Formateo de particiones y (des)cifrado:**
 
-Formateamos la partición donde irá **/boot** con ext2 y ciframos la otra:
+Formateamos la partición donde irá **/boot** con ext4 y ciframos la otra:
 ```
-# mkfs -t ext2 /dev/sda1
+# mkfs -t ext4 -L "boot" /dev/sda1
 # cryptsetup -y -c aes-xts-plain64 -s 512 -h sha512 -i 5000 --use-random luksFormat /dev/sda2
 ```
-Es momento de explicar qué hace cada parámetro que le pasamos a **cryptsetup**
+Es momento de explicar qué hace cada parámetro que le pasamos a **cryptsetup y mkfs.**
 ```
--y le indica que pida la contraseña dos veces y se queje si ambas no coinciden
--c es para indicar el algoritmo de cifrado (en este caso: aes-xts-plain64)
--s es para indicar el tamaño de la clave (en este caso: 512 bits)
--h es para indicar el hash (en este caso: sha512)
--i es para indicar el tiempo que tardará en descifrar la partición
---use-random es para indicarle al kernel que genere números aleatorios utilizando la clave maestra
-luksFormat es para aplicar el algoritmo LUKS
-/dev/sda2 es el dispositivo sobre el cual se aplicará el cifrado.
+MKFS:
+-t: Indica el sistema de archivos a utilizar. En este caso: ext4
+-L: Especifica un nombre o label para el dispositivo. En este caso: "boot". (Esto es opcional)
+
+CryptSetup:
+-y: le indica que pida la contraseña dos veces y se queje si ambas no coinciden.
+-c: es para indicar el algoritmo de cifrado (en este caso: aes-xts-plain64).
+-s: es para indicar el tamaño de la clave (en este caso: 512 bits).
+-h: es para indicar el hash (en este caso: sha512).
+-i: es para indicar el tiempo que tardará en descifrar la partición.
+--use-random: es para indicarle al kernel que genere números aleatorios utilizando la clave maestra.
+luksFormat: es para aplicar el algoritmo LUKS
+/dev/sda2: es el dispositivo sobre el cual se aplicará el cifrado.
 ```
 **4.1 Descifrado:**
 
@@ -105,7 +117,7 @@ Ahora debemos descifrar la partición para poder seguir con la instalación:
 # cryptsetup luksOpen /dev/sda2 gentoo
 ```
 ```
-1. luksDump:"vuelca" las cabeceras de LUKS en el dispositivo (en este caso /dev/sda2)
+1. luksDump: "vuelca" las cabeceras de LUKS en el dispositivo (en este caso /dev/sda2)
 2. luksOpen: desciframos el dispositivo. Este parámetro requiere de dos parámetros adicionales:
 2.1: Dispositivo cifrado con LUKS
 2.2: Nombre identificativo del dispositivo. Puede ser cualquiera. En este caso he elegido "gentoo".
@@ -116,7 +128,7 @@ Es momento de configurar LVM. Aquí depende del tamaño de tu disco y qué espac
 
 Yo creo 3 volúmenes: swap, / y /home. Tengo un SSD de 120 GiB así que queda algo así:
 
-5 GiB para swap, 25 GiB para root y todo el espacio restante para home
+5 GiB para swap, 25 GiB para root y todo el espacio restante para home.
 ```
 # rc-service lvm start
 
@@ -132,11 +144,11 @@ Yo creo 3 volúmenes: swap, / y /home. Tengo un SSD de 120 GiB así que queda al
 
 # vgchange -ay
 
-# mkfs.ext4 /dev/mapper/gentoo-root
+# mkfs -t ext4 -L "root" /dev/mapper/gentoo-root
 
-# mkfs.ext4 /dev/mapper/gentoo-home
+# mkfs -t ext4 -L "home" /dev/mapper/gentoo-home
 
-# mkswap /dev/mapper/gentoo-swap
+# mkswap -L "swap" /dev/mapper/gentoo-swap
 
 # swapon /dev/mapper/gentoo-swap
 
@@ -170,20 +182,26 @@ así tener los metadatos de lvm, que nos servirán al momento de instalar y conf
 Descargar el stage (En el [Handbook](https://wiki.gentoo.org/wiki/Handbook:AMD64/Full/Installation/es) recomiendan 
 el stage 3, así que ese será el que descargaremos).
 
-En la misma página de dónde descargamos la iso de Gentoo está el stage 3. [Aquí](https://www.gentoo.org/downloads/)
+**¿Qué es el stage 3?**
+**De forma simplificada** es un sistema desde el cual se inicia la instalación de Gentoo.
+
+Este trae instaladas una serie de herramientas que nos facilitan el trabajo. Por ejemplo, ya trae
+un compilador, editor de archivos, entre otras cosas.
+
+En la misma página de dónde descargamos el archivo iso de Gentoo está el stage 3.
+[Aquí](https://www.gentoo.org/downloads/)
 
 Después de haber descargado el stage 3 debemos descomprimirlo:
 
 ```
-# tar -vpx --numeric-owner --xattrs-include"*.*" -f stage3-amd64-*
+# tar --numeric-owner --xattrs-include="*.*" -vpxf stage3-*
 ```
-
 Para saber qué hace cada parámetro que se utilizó de **tar**, leer su correspondiente **manual.**
 
 **7. Editar el archivo make.conf:**
 
-El archivo **make.conf** ubicado en **/etc/portage/make.conf**, es el archivo de configuración de portage, 
-la herramienta que se utiliza para compilar los paquetes en Gentoo, asi que como adivinarás, es muy importante.
+El archivo **make.conf** ubicado en **/etc/portage/**, es el archivo de configuración de portage, 
+la herramienta que se utiliza para compilar los paquetes en Gentoo, asi que como podrás deducir: **es muy importante.**
 
 Viene así:
 ```
@@ -198,9 +216,9 @@ FCFLAGS="${COMMON_FLAGS}"
 FFLAGS="${COMMON_FLAGS}"
 
 # NOTE: This stage was built with the bindist Use flag enabled
-PORTDIR="/usr/portage"
-DISTDIR="/usr/portage/distfiles"
-PKGDIR="/usr/portage/packages"
+PORTDIR="/var/db/repos/gentoo"
+DISTDIR="/var/cache/distfiles"
+PKGDIR="/var/cache/binpkgs"
 
 # This sets the language of build output to English.
 # Please keep this setting intact when reporting bugs.
@@ -209,7 +227,7 @@ LC_MESSAGES=C
 
 Yo lo dejo así de la siguiente forma al momento de la instalación, luego lo modifico con todas las
 opciones que utilizo. Si quieres saber cuales son, 
-[échale un ojo a mi repositorio dotfiles en la sección de gentoo](https://github.com/brookiestein/dotfiles/)
+échale un ojo a mi repositorio [dotfiles](https://github.com/brookiestein/dotfiles/) en la sección de gentoo.
 ```
 # These settings were set by the catalyst build script that automatically
 # built this stage.
@@ -221,48 +239,46 @@ CXXFLAGS="${COMMON_FLAGS}"
 FCFLAGS="${COMMON_FLAGS}"
 FFLAGS="${COMMON_FLAGS}"
 MAKEOPTS="-j4"
-LINGUAS="es es_ES"
-L10N="es es-ES"
-VIDEO_CARDS="intel"
+L10N="en en-US"
+VIDEO_CARDS="intel i965"
 GRUB_PLATFORMS="pc"
 
 # NOTE: This stage was built with the bindist Use flag enabled
-PORTDIR="/usr/portage"
-DISTDIR="/usr/portage/distfiles"
-PKGDIR="/usr/portage/packages"
+PORTDIR="/var/db/repos/gentoo"
+DISTDIR="/var/cache/distfiles"
+PKGDIR="/var/cache/binpkgs"
 
 # This sets the language of build output to English.
 # Please keep this setting intact when reporting bugs.
 LC_MESSAGES=C
 
-USE="bash bluetooth crypt cryptsetup dbus device-mapper mount symlink truetype"
+USE="bash dbus device-mapper mount symlink truetype"
 ```
 Bien, es momento de explicar qué fue todo lo que le agregué:
 
 En __COMMON_FLAGS__ le agregué: *__-march=native__* para que me compile los paquetes de manera 
 específica para mi procesador.
 
-En __MAKEOPTS__ debes agregarle el número de hilos de tu procesador, mi procesador es de 2 núcleos, 
+En **MAKEOPTS** debes agregarle el número de hilos de tu procesador, mi procesador es de 2 núcleos, 
 4 hilos, así que queda como **"-j4"**
 
-En __LINGUAS__ y __L10N__ son variables para la configuración del idioma, de ahí algunas aplicaciones 
+**L10N** es una variables para la configuración del idioma, de ahí algunas aplicaciones 
 toman configuraciones para instalarse en tu idioma, por ejemplo.
 
-EN __VIDEO_CARDS__ debes ponerle la tarjeta de vídeo que tienes, yo tengo una tarjeta de vídeo integrada 
+EN **VIDEO_CARDS** debes ponerle la tarjeta de vídeo que tienes, yo tengo una tarjeta de vídeo integrada 
 en mi procesador intel así que queda como:
 
-*__VIDEO_CARDS="intel"__*, si tienes otra gráfica deberás ponerla, si no sabes cuál tarjeta gráfica tienes 
+**VIDEO_CARDS="intel i965"**, si tienes otra gráfica deberás ponerla, si no sabes cuál tarjeta gráfica tienes 
 puedes guardar los cambios, salir y en el prompt escribir lo siguiente:
-
 ```
 # lspci | grep VGA
 ```
 Para obtener información sobre tu tarjeta gráfica.
 
-En __GRUB_PLATFORMS__ es para que **GRUB** (que instalaremos más tarde) sepa con qué 
+En **GRUB_PLATFORMS** es para que **GRUB** (que instalaremos más tarde) sepa con qué 
 configuración instalarse, con decirle:
 
-*__GRUB_PLATFORMS="pc"__* le estás diciendo que se instale con las configuraciones por defecto, 
+**GRUB_PLATFORMS="pc"** le estás diciendo que se instale con las configuraciones por defecto, 
 ahora bien, si tienes EFI deberás realizar algunos pasos extra.
 
 Puedes informarte en el [Handbook](https://wiki.gentoo.org/wiki/Handbook:AMD64/Full/Installation/es#Seleccionar_un_gestor_de_arranque).
@@ -270,24 +286,19 @@ Puedes informarte en el [Handbook](https://wiki.gentoo.org/wiki/Handbook:AMD64/F
 Y, por último, **USE ("la navaja suiza de Gentoo"):** aquí es dónde van todos los valores de 
 soporte que queremos agregar a nuestros programas. En este caso agregué soporte para:
 
-**bash, bluetooth, crypt, cryptsetup, dbus, device-mapper, mount, symlink y truetype**
+**bash, dbus, device-mapper, mount, symlink y truetype**
 
-**Si quieres saber sobre algunos ajustes USE que podrían interesarte, lee el archivo de los mismos en:**
-
-**/usr/portage/profiles/use.desc**
-
+**Si deseas saber más sobre USE Flags que puedes utilizar visita la correspondiente página en la wiki de Gentoo.**
 
 **8. Seleccionar un servidor de réplica:**
 ```
 # mirrorselect -i -o >> /mnt/gentoo/etc/portage/make.conf
 ```
-
 **9. Configurar el repositorio de ebuilds de Gentoo:**
 ```
 # mkdir /mnt/gentoo/etc/portage/repos.conf/
 # cp /mnt/gentoo/usr/share/portage/config/repos.conf /mnt/gentoo/etc/portage/repos.conf/gentoo.conf
 ```
-
 **10. Copiar la información DNS:**
 ```
 # cp -L /etc/resolv.conf /mnt/gentoo/etc/
@@ -306,11 +317,10 @@ soporte que queremos agregar a nuestros programas. En este caso agregué soporte
 **12. Entrar en "una jaula chroot":**
 ```
 
-# mkdir /mnt/gentoo/usr/portage/
+# mkdir /mnt/gentoo/var/db/repos/gentoo
 
 # chroot /mnt/gentoo /bin/bash
 ```
-
 **13. Cargar las configuraciones del archivo "profile" y cambiarle el valor a la variable "PS1".**
 
 Esto último es opcional, pero recomiendo hacerlo para ver ese **"bonito": "chroot"** en el prompt jeje.
@@ -330,7 +340,7 @@ el cargador de arranque más adelante:
 ```
 **15. Instalar una instantánea y actualizar el repositorio local:**
 
-Ahora vamos a instalar una instantánea de repositorio de ebuilds desde la web y actualizar el repositorio
+Ahora vamos a instalar una instantánea de repositorio de ebuilds desde la web y actualizar el repositorio.
 ```
 # emerge-webrsync -v
 # emerge --sync
@@ -379,7 +389,11 @@ Deberás poner tu localización al final del archivo, estilo:
 es_ES.UTF-8 UTF-8
 ```
 ```
-# nano -lw /etc/locale.gen
+# nano -l /etc/locale.gen
+```
+```
+El parámetro -l le dice a nano que muestra el número de líneas del archivo a editar.
+Esto es opcional.
 ```
 Guarda los cambios con **CTRL + S** y sal con **CTRL + X**.
 
@@ -389,7 +403,7 @@ Ahora genera las localizaciones y actívalas con:
 
 # eselect locale list
 
-# eselect locale set <<número_de_la_localización>>
+# eselect locale set <<número_de_la_localización>> o <<nombre_completo>>
 ```
 Por finalizar con este paso, "refrescamos" nuestro entorno con:
 ```
@@ -412,9 +426,8 @@ Bien vamos de menor a mayor, así que primero explicaré cómo hacerlo con **Gen
 
 **19.1.1. Instalar programas necesarios:**
 
-Primero instalaremos algunos paquetes importantes. 
+Primero instalaremos algunos programas importantes. 
 Estos te servirán independientemente de la opción de compilación del kernel/núcleo que hayas elegido.
-
 ```
 # emerge -a gentoo-sources genkernel grub dhcpcd gentoolkit pciutils
 ```
@@ -440,14 +453,16 @@ Cuándo termine de compilar esos paquetes, verifica que el enlace simbólico **"
 # ls -l /usr/src/linux
 ```
 
-Si no es así, crealo:
+Si utilizaste el USE Flag: **symlink** tal como lo hice yo en mi archivo **make.conf** portage
+ya lo realizó por ti.
+
+Si no es así, crealo. Cambia **versión actual, por la versión que instalaste**:
 ```
-ln -s /usr/src/linux /usr/src/linux-$(uname -r)
+ln -s /usr/src/linux-version_actual /usr/src/linux
 ```
 **19.1.3. Compilación e instalación: Módulos e initramfs con Genkernel:**
 
-Y para compilar:
-
+Para compilar:
 ```
 # genkernel --lvm --luks all
 ```
@@ -473,15 +488,18 @@ porque quiero tenerlos. Donde se aplican estos últimos, digo que no es necesari
 
 **19.2.1. Verificación del enlace simbólico a las fuentes:**
 
-Primero verifica que el enlace simbólico **"linux"** apunta a las fuentes correspondientes:
+Si utilizaste el USE Flag: **symlink** tal como lo hice yo en mi archivo **make.conf** portage
+ya lo realizó por ti.
+
+Pero de todos modos verifica que el enlace simbólico **"linux"** apunta a las fuentes correspondientes:
 ```
 ls -l /usr/src/linux
 ```
 **19.2.2. Creación del enlace simbólico a las fuentes:**
 
-Si no es así, crealo:
+Si no es así, crealo. Cambia **versión actual, por la versión que instalaste**:
 ```
-ln -s /usr/src/linux /usr/src/linux-$(uname -r)
+ln -s /usr/src/linux-version_actual /usr/src/linux
 ```
 
 **19.2.3. Entrar en el directorio de las fuentes y menú de configuración:**
@@ -794,6 +812,8 @@ Ejecuta **make** con el parámetro **-j** y a este "pásale" el número de hilos
 ```
 # make -j 4
 
+# make -j 4 modules
+
 # make modules_install
 
 # make install
@@ -805,11 +825,13 @@ Ejecuta **make** con el parámetro **-j** y a este "pásale" el número de hilos
 ```
 1. make: Es para compilar el kernel/núcleo.
 
-2. make modules_install: Es para compilar los módulos.
+2. make modules: Es para compilar los módulos.
 
-3. make install: Es para instalar el kernel.
+3. make modules_install: Es para instalar los módulos.
 
-4. genkernel --lvm --luks --install initramfs: Es para crear el initramfs con soporte para LVM y LUKS.
+4. make install: Es para instalar el kernel.
+
+5. genkernel --lvm --luks --install initramfs: Es para crear el initramfs con soporte para LVM y LUKS.
 ```
 
 Bien, ya con eso tendríamos nuestro núcleo listo.
@@ -1105,12 +1127,6 @@ Podrás encontrar más información en la [Wiki de Gentoo](https://wiki.gentoo.o
 Esto sólo fue una pequeña introducción, tienes todo un universo que descubrir con Gentoo.
 
 Así que con esto me despido. ¡Disfuta del universo de Gentoo!
-
-Te comparto estas dos frases que podrían ayudarte xD
-
-**La suerte no existe sólo las Matemáticas y la ciencia**
-
-**No necesitas suerte, sólo determinación y esfuerzo.**
 
 **34. Enlaces que te podrían interesar:**
 
